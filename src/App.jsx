@@ -10,7 +10,10 @@ import {
   Pencil,
   Info,
   Download,
-  Upload
+  Upload,
+  CalendarDays,
+  BarChart2,
+  Sparkles
 } from 'lucide-react';
 import './App.css';
 
@@ -56,6 +59,7 @@ const getPolishHolidays = (year) => {
 export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [currentTab, setCurrentTab] = useState('calendar');
   
   const [vacations, setVacations] = useState(() => {
     const saved = localStorage.getItem('vacations');
@@ -240,6 +244,58 @@ export default function App() {
     e.target.value = null; // Reset input so the same file could be loaded again
   };
 
+  const getStats = () => {
+    const currentYear = currentDate.getFullYear();
+    const yearlyVacations = vacations.filter(v => new Date(v.date).getFullYear() === currentYear);
+
+    return Object.entries(VACATION_TYPES).map(([key, config]) => {
+      const count = yearlyVacations.filter(v => v.type === key).length;
+      return {
+        key,
+        label: config.label,
+        count,
+        bg: config.bg,
+        color: config.color,
+        isTotalCountable: key === 'WYPOCZYNKOWY'
+      };
+    }).filter(s => s.count > 0 || s.isTotalCountable).sort((a,b) => b.count - a.count);
+  };
+
+  const calculateLongWeekends = () => {
+    const year = currentDate.getFullYear();
+    const holidays = getPolishHolidays(year);
+    const suggestions = [];
+
+    holidays.forEach(holidayStr => {
+      const hDate = new Date(holidayStr);
+      const dayOfWeek = hDate.getDay();
+      
+      const checkAndPush = (offset, benefitText) => {
+        const suggestionDate = new Date(hDate);
+        suggestionDate.setDate(hDate.getDate() + offset);
+        
+        // Nie proponuj jesli minelo
+        if (suggestionDate < new Date(new Date().setHours(0,0,0,0)) && year <= new Date().getFullYear()) return;
+        
+        // Czy juz wzial
+        if (vacations.find(v => new Date(v.date).toDateString() === suggestionDate.toDateString())) return;
+        
+        suggestions.push({
+          id: suggestionDate.toISOString(),
+          holidayName: hDate.toLocaleDateString('pl-PL', { month: 'long', day: 'numeric' }),
+          suggestedStr: suggestionDate.toLocaleDateString('pl-PL', { weekday: 'long', month: 'long', day: 'numeric' }),
+          suggestionDate,
+          benefit: benefitText,
+        });
+      };
+
+      if (dayOfWeek === 2) checkAndPush(-1, 'Zyskujesz 4 dni wolnego! (Sob-Wt)'); // Wtorek -> Poniedzialek
+      if (dayOfWeek === 4) checkAndPush(1, 'Zyskujesz 4 dni wolnego! (Czw-Ndz)'); // Czwartek -> Piatek
+    });
+    
+    return suggestions.sort((a,b) => a.suggestionDate - b.suggestionDate).slice(0, 3);
+  };
+
   const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
   const dayNames = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
@@ -281,6 +337,7 @@ export default function App() {
         </div>
       </header>
 
+      {currentTab === 'calendar' && (
       <main>
         <div className="card">
           <div className="calendar-header">
@@ -320,6 +377,24 @@ export default function App() {
           </div>
         </div>
 
+        {calculateLongWeekends().length > 0 && (
+          <section className="optimizer-banner">
+            <div className="optimizer-title">
+              <Sparkles size={18} />
+              Optymalizator Długich Weekendów
+            </div>
+            {calculateLongWeekends().map(suggestion => (
+              <div key={suggestion.id} className="optimizer-item">
+                Dzięki świętu <b>{suggestion.holidayName}</b>,<br />
+                zaplanuj urlop na: <b>{suggestion.suggestedStr}</b>
+                <div style={{ color: 'var(--primary-light)', fontWeight: 600, fontSize: '0.75rem', marginTop: '2px' }}>
+                  {suggestion.benefit}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
         <section>
           <h3 className="section-title">Zaplanowane przerwy</h3>
           {getVacationBlocks().length === 0 ? (
@@ -358,6 +433,77 @@ export default function App() {
           </p>
         </section>
       </main>
+      )}
+
+      {currentTab === 'stats' && (
+      <main>
+        <div className="card">
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', fontWeight: 600 }}>
+            <BarChart2 size={24} color="var(--primary-light)" />
+            Roczne Podsumowanie
+          </h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <button className="btn-icon" onClick={() => setCurrentDate(new Date(currentDate.getFullYear() - 1, 1, 1))}><ChevronLeft size={20} /></button>
+            <h3 style={{ margin: 0 }}>Rok {currentDate.getFullYear()}</h3>
+            <button className="btn-icon" onClick={() => setCurrentDate(new Date(currentDate.getFullYear() + 1, 1, 1))}><ChevronRight size={20} /></button>
+          </div>
+          
+          <div className="stats-container">
+            {getStats().map(stat => {
+              const maxVal = stat.isTotalCountable ? totalVacationDays : Math.max(30, stat.count * 2);
+              const percentage = Math.min(100, Math.round((stat.count / maxVal) * 100));
+
+              return (
+                <div key={stat.key} className="stat-row">
+                  <div className="stat-header">
+                    <span className="stat-label">{stat.label}</span>
+                    <span className="stat-value">
+                      {stat.count} {stat.isTotalCountable ? `/ ${totalVacationDays}` : ''} dni
+                    </span>
+                  </div>
+                  <div className="stat-bar-container">
+                    <div 
+                      className="stat-bar-fill" 
+                      style={{ 
+                        width: `${percentage}%`, 
+                        backgroundColor: stat.color,
+                        boxShadow: `0 0 8px ${stat.bg}` 
+                      }} 
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {getStats().length === 0 && (
+              <div className="text-center" style={{ padding: '2rem', opacity: 0.5 }}>Brak danych w tym roku</div>
+            )}
+            
+            <p className="backup-info" style={{ textAlign: 'center', marginTop: '2rem' }}>
+              Statystyki sumują wyłącznie wykorzystane dni do aktualnie analizowanego roku kalendarzowego.
+            </p>
+          </div>
+        </div>
+      </main>
+      )}
+
+      {/* Dolny Pasek Nawigacji */}
+      <nav className="bottom-nav">
+        <button 
+          className={`nav-item ${currentTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('calendar')}
+        >
+          <CalendarDays size={20} />
+          <span>Kalendarz</span>
+        </button>
+        <button 
+          className={`nav-item ${currentTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setCurrentTab('stats')}
+        >
+          <BarChart2 size={20} />
+          <span>Statystyki</span>
+        </button>
+      </nav>
 
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
