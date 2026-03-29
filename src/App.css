@@ -39,6 +39,21 @@
   --text-muted: #94a3b8;
   --border: #1e293b;
   --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+
+  --type-wypoczynkowy: #34d399;
+  --type-wypoczynkowy-bg: rgba(52, 211, 153, 0.2);
+  --type-l4: #f87171;
+  --type-l4-bg: rgba(248, 113, 113, 0.2);
+  --type-zadanie: #fbbf24;
+  --type-zadanie-bg: rgba(251, 191, 36, 0.2);
+  --type-bezplatny: #2dd4bf;
+  --type-bezplatny-bg: rgba(45, 212, 191, 0.2);
+  --type-weekend: #fb923c;
+  --type-weekend-bg: rgba(251, 146, 60, 0.2);
+  --type-odbior: #a78bfa;
+  --type-odbior-bg: rgba(167, 139, 250, 0.2);
+  --type-inne: #94a3b8;
+  --type-inne-bg: rgba(148, 163, 184, 0.2);
 }
 
 * {
@@ -200,7 +215,7 @@ main {
 
 .day-cell {
   height: 40px;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   background: var(--background);
   border-radius: 8px;
   display: flex;
@@ -236,7 +251,7 @@ main {
 
 .day-cell.weekend {
   color: #f87171;
-  background-color: var(--background);
+  background-color: transparent;
 }
 
 .day-cell.has-vacation {
@@ -350,7 +365,7 @@ main {
 
 .date-inputs {
   display: grid;
-  grid-template-cols: 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
