@@ -1,0 +1,16 @@
+{
+  "name": "Mój Urlop | Kalendarz",
+  "short_name": "Mój Urlop",
+  "start_url": "/Kalendarz-Urlopowy/",
+  "display": "standalone",
+  "background_color": "#064e3b",
+  "theme_color": "#065f46",
+  "description": "Zarządzaj swoim urlopem, L4 i odbiorem nadgodzin w jednym miejscu.",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}

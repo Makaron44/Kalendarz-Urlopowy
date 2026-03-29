@@ -1,0 +1,8 @@
+/* Reset default Vite styles to prioritize our App.css premium theme */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
